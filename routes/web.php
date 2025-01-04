@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CategoryController;
+Route::resource('products', ProductController::class);
+Route::resource('categories', CategoryController::class);
+Route::get('export-products', [ProductController::class, 'exportProducts']);
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,6 +19,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+
+
