@@ -1,38 +1,37 @@
 <?php
-
 namespace App\Jobs;
 
+use App\Exports\ProductsExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Product;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Storage;
+
 class ExportProductsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    protected $filePath;
+
+    public function __construct($filePath)
     {
-        //
+        $this->filePath = $filePath;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle()
     {
-        $products = Product::all();
-        $csvContent = "ID,Name,Description,Price,Quantity,Category\n";
+        try {
+            // Export the products and store them
+            Excel::store(new ProductsExport, $this->filePath, 'public');
 
-        foreach ($products as $product) {
-            $csvContent .= "{$product->id},{$product->name},{$product->description},{$product->price},{$product->quantity},{$product->category->name}\n";
+            // Send a notification or take additional actions here if needed
+            // For example, you could trigger a notification or an event to notify the user when done
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to export products: ' . $e->getMessage());
         }
-
-        Storage::put('public/products.csv', $csvContent);
     }
 }

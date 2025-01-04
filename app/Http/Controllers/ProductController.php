@@ -1,10 +1,14 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
 use App\Jobs\ExportProductsJob;
+use App\Exports\ProductsExport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\File;
 
 class ProductController extends Controller
 {
@@ -15,7 +19,7 @@ class ProductController extends Controller
         // Search
         if ($request->has('search')) {
             $query->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%");
+                ->orWhere('description', 'like', "%{$request->search}%");
         }
 
         // Filter by category
@@ -93,9 +97,82 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 
-    public function exportProducts()
+    public function exportProductsView()
     {
         ExportProductsJob::dispatch();
         return redirect()->route('products.index')->with('success', 'CSV export has been queued.');
+    }
+
+    /**
+     * Export all products to a CSV file asynchronously.
+     */
+    public function exportProducts()
+    {
+        try {
+            // Define the file path
+            $filePath = 'exports/products_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+            // Dispatch the job for background export
+            ExportProductsJob::dispatch($filePath);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Products export is in progress. You will be notified once it is ready.',
+                'filePath' => $filePath,  // You can store or send this information to notify the user later
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export products: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function downloadExport($fileName)
+    {
+        $filePath = storage_path('app/public/exports/' . $fileName);
+
+        if (file_exists($filePath)) {
+            return response()->download($filePath);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'File not found.',
+        ]);
+    }
+
+
+
+    // public function exportProducts()
+    // {
+    //     try {
+    //         $filePath = 'exports/products_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+    //         // Use Excel facade to store the file
+    //         Excel::store(new ProductsExport, $filePath, 'public');
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Products exported successfully.',
+    //             'url' => asset('storage/' . $filePath),
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to export products: ' . $e->getMessage(),
+    //         ]);
+    //     }
+    // }
+
+    public function showExportedFiles()
+    {
+        // Define the path where exported files are stored
+        $exportDirectory = storage_path('app/public/exports');
+
+        // Get all files in the directory
+        $files = File::allFiles($exportDirectory);
+
+        return view('products.list', ['files' => $files]);
     }
 }
