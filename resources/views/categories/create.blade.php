@@ -25,7 +25,45 @@
             </select>
         </div>
 
+        <div class="mb-3" id="child-category-container" style="display: none;">
+            <label for="child_id" class="form-label">Child Category</label>
+            <select name="child_id" id="child_id" class="form-control">
+                <option value="">-- Select Child Category --</option>
+            </select>
+        </div>
+
         <button type="submit" class="btn btn-primary">Add Category</button>
     </form>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#parent_id').on('change', function () {
+            const parentId = $(this).val();
+            if (parentId) {
+                $.ajax({
+                    url: "{{ route('categories.children') }}",
+                    type: 'GET',
+                    data: { parent_id: parentId },
+                    success: function (data) {
+                        if (data.length > 0) {
+                            $('#child-category-container').show();
+                            $('#child_id').empty().append('<option value="">-- Select Child Category --</option>');
+                            $.each(data, function (index, category) {
+                                $('#child_id').append('<option value="' + category.id + '">' + category.name + '</option>');
+                            });
+                        } else {
+                            $('#child-category-container').hide();
+                            $('#child_id').empty();
+                        }
+                    }
+                });
+            } else {
+                $('#child-category-container').hide();
+                $('#child_id').empty();
+            }
+        });
+    });
+</script>
 @endsection

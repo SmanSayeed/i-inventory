@@ -36,6 +36,15 @@ class CategoryController extends Controller
         return view('categories.edit', compact('category', 'categories'));
     }
 
+    public function getChildren(Request $request)
+{
+    $parentId = $request->parent_id;
+    $categories = Category::where('parent_id', $parentId)->get();
+
+    return response()->json($categories);
+}
+
+
     public function update(Request $request, Category $category)
     {
         $request->validate([
